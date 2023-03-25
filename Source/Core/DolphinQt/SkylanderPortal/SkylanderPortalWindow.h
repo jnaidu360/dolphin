@@ -6,8 +6,9 @@
 #include <array>
 #include <optional>
 
-#include <QDialog>
+#include <QBrush>
 #include <QString>
+#include <QTimer>
 #include <QWidget>
 
 #include "Core/Core.h"
@@ -16,6 +17,9 @@
 class QCheckBox;
 class QGroupBox;
 class QLineEdit;
+class QPushButton;
+class QRadioButton;
+class QListWidget;
 
 struct Skylander
 {
@@ -36,29 +40,56 @@ protected:
   std::array<std::optional<Skylander>, MAX_SKYLANDERS> m_sky_slots;
 
 private:
+  // window
   void CreateMainWindow();
-  void OnEmulationStateChanged(Core::State state);
-  void CreateSkylander(u8 slot);
-  void ClearSkylander(u8 slot);
-  void EmulatePortal(bool emulate);
-  void LoadSkylander(u8 slot);
-  void LoadSkylanderPath(u8 slot, const QString& path);
-  void UpdateEdits();
+  QGroupBox* CreatePortalGroup();
+  QGroupBox* CreateSearchGroup();
   void closeEvent(QCloseEvent* bar) override;
   bool eventFilter(QObject* object, QEvent* event) final override;
 
-  QCheckBox* m_checkbox;
+  // user interface
+  void EmulatePortal(bool emulate);
+  void SelectCollectionPath();
+  void LoadSelected();
+  void LoadFromFile();
+  void ClearSlot(u8 slot);
+  void CreateSkylanderAdvanced();
+
+  // behind the scenes
+  void OnEmulationStateChanged(Core::State state);
+  void OnCollectionPathChanged();
+  void RefreshList();
+  void UpdateCurrentIDs();
+  void CreateSkyfile(const QString& path, bool loadAfter);
+  void LoadSkyfilePath(u8 slot, const QString& path);
+  void UpdateSlotNames();
+
+  // helpers
+  bool PassesFilter(QString name, u16 id, u16 var);
+  QString GetFilePath(u16 id, u16 var);
+  u8 GetCurrentSlot();
+  int GetElementRadio();
+  QBrush GetBaseColor(std::pair<const u16, const u16> ids);
+
+  bool m_emulating;
+  QCheckBox* m_enabled_checkbox;
   QGroupBox* m_group_skylanders;
-};
+  QGroupBox* m_command_buttons;
+  QRadioButton* m_slot_radios[16];
 
-class CreateSkylanderDialog : public QDialog
-{
-  Q_OBJECT
+  // Qt is not guaranteed to keep track of file paths using native file pickers, so we use this
+  // variable to ensure we open at the most recent Skylander file location
+  QString m_last_skylander_path;
 
-public:
-  explicit CreateSkylanderDialog(QWidget* parent);
-  QString GetFilePath() const;
+  QString m_collection_path;
+  QLineEdit* m_path_edit;
+  QPushButton* m_path_select;
 
-protected:
-  QString m_file_path;
+  QCheckBox* m_game_filters[5];
+  QRadioButton* m_element_filter[10];
+  QCheckBox* m_only_show_collection;
+  QLineEdit* m_sky_search;
+  QListWidget* m_skylander_list;
+  u16 sky_id;
+  u16 sky_var;
 };

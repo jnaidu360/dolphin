@@ -19,7 +19,36 @@ constexpr u8 MAX_SKYLANDERS = 16;
 
 namespace IOS::HLE::USB
 {
-extern const std::map<const std::pair<const u16, const u16>, const char*> list_skylanders;
+enum Game
+{
+  SPYROS_ADV,
+  GIANTS,
+  SWAP_FORCE,
+  TRAP_TEAM,
+  SUPERCHARGERS,
+  G_OTHER,
+};
+enum Element
+{
+  MAGIC,
+  FIRE,
+  AIR,
+  LIFE,
+  UNDEAD,
+  EARTH,
+  WATER,
+  TECH,
+  E_OTHER,
+};
+
+struct SkyData
+{
+  const char* name = "";
+  Game game = G_OTHER;
+  Element element = E_OTHER;
+};
+
+extern const std::map<const std::pair<const u16, const u16>, SkyData> list_skylanders;
 class SkylanderUSB final : public Device
 {
 public:
