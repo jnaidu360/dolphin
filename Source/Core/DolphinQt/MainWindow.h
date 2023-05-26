@@ -81,6 +81,7 @@ public:
 signals:
   void ReadOnlyModeChanged(bool read_only);
   void RecordingStatusChanged(bool recording);
+  void RenderInstanceChanged(RenderWidget* render);
 
 private:
   void Open();

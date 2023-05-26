@@ -13,6 +13,8 @@
 
 #include "Core/Core.h"
 #include "Core/IOS/USB/Emulated/Skylander.h"
+#include "DolphinQt/MainWindow.h"
+#include "DolphinQt/RenderWidget.h"
 
 class QCheckBox;
 class QGroupBox;
@@ -28,11 +30,32 @@ struct Skylander
   u16 sky_var;
 };
 
+class PortalButton : public QWidget
+{
+  Q_OBJECT
+public:
+  explicit PortalButton(RenderWidget* rend, QWidget* pWindow, QWidget* parent = nullptr);
+  ~PortalButton() override;
+
+  void OpenMenu();
+  void SetRender(RenderWidget* r);
+  void Hovered();
+  void SetEnabled(bool enable);
+
+private:
+  QPushButton* button;
+  QTimer fade_out;
+  RenderWidget* render = nullptr;
+  QWidget* portal_window = nullptr;
+  bool enabled;
+};
+
 class SkylanderPortalWindow : public QWidget
 {
   Q_OBJECT
 public:
-  explicit SkylanderPortalWindow(QWidget* parent = nullptr);
+  explicit SkylanderPortalWindow(RenderWidget* render, const MainWindow* main,
+                                 QWidget* parent = nullptr);
   ~SkylanderPortalWindow() override;
 
 protected:
@@ -73,8 +96,10 @@ private:
 
   bool m_emulating;
   QCheckBox* m_enabled_checkbox;
+  QCheckBox* m_show_button_ingame_checkbox;
   QGroupBox* m_group_skylanders;
   QGroupBox* m_command_buttons;
+  PortalButton* open_portal_btn;
   QRadioButton* m_slot_radios[16];
 
   // Qt is not guaranteed to keep track of file paths using native file pickers, so we use this

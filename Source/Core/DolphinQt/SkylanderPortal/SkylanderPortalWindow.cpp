@@ -31,12 +31,71 @@
 #include "Core/Config/MainSettings.h"
 #include "Core/IOS/USB/Emulated/Skylander.h"
 #include "Core/System.h"
+#include "DolphinQt/MainWindow.h"
+#include "DolphinQt/RenderWidget.h"
 
 #include "DolphinQt/QtUtils/DolphinFileDialog.h"
 #include "DolphinQt/Resources.h"
 #include "DolphinQt/Settings.h"
 
-SkylanderPortalWindow::SkylanderPortalWindow(QWidget* parent) : QWidget(parent)
+PortalButton::PortalButton(RenderWidget* rend, QWidget* pWindow, QWidget* parent) : QWidget(parent)
+{
+  SetRender(rend);
+  portal_window = pWindow;
+
+  setWindowTitle(tr("Portal Button"));
+  setWindowFlags(Qt::Widget | Qt::FramelessWindowHint);
+  setParent(0);
+  setAttribute(Qt::WA_NoSystemBackground, true);
+  setAttribute(Qt::WA_TranslucentBackground, true);
+
+  button = new QPushButton(tr("Portal of Power"), this);
+  button->resize(100, 50);
+  connect(button, &QAbstractButton::clicked, this, [this]() { OpenMenu(); });
+  fade_out.callOnTimeout(this, &PortalButton::hide);
+
+  move(100, 150);
+}
+
+PortalButton::~PortalButton() = default;
+
+void PortalButton::SetEnabled(bool enable)
+{
+  enabled = enable;
+  render->SetReportMouseMovement(enable);
+  hide();
+}
+
+void PortalButton::OpenMenu()
+{
+  portal_window->show();
+  portal_window->raise();
+  portal_window->activateWindow();
+}
+
+void PortalButton::SetRender(RenderWidget* r)
+{
+  if (render != nullptr)
+  {
+    disconnect(render, &RenderWidget::MouseMoved, this, &PortalButton::Hovered);
+  }
+  render = r;
+  connect(render, &RenderWidget::MouseMoved, this, &PortalButton::Hovered, Qt::DirectConnection);
+}
+
+void PortalButton::Hovered()
+{
+  if (enabled)
+  {
+    show();
+    raise();
+    fade_out.start(1000);
+  }
+}
+
+SkylanderPortalWindow::SkylanderPortalWindow(RenderWidget* render, const MainWindow* main,
+                                             QWidget* parent)
+    : QWidget(parent)
 {
   setWindowTitle(tr("Skylanders Manager"));
   setWindowIcon(Resources::GetAppIcon());
@@ -53,6 +112,9 @@ SkylanderPortalWindow::SkylanderPortalWindow(QWidget* parent) : QWidget(parent)
   installEventFilter(this);
 
   OnEmulationStateChanged(Core::GetState());
+
+  open_portal_btn = new PortalButton(render, this);
+  connect(main, &MainWindow::RenderInstanceChanged, open_portal_btn, &PortalButton::SetRender);
 
   sky_id = 0;
   sky_var = 0;
@@ -145,11 +207,15 @@ QGroupBox* SkylanderPortalWindow::CreatePortalGroup()
   m_enabled_checkbox = new QCheckBox(tr("Emulate Skylander Portal"), this);
   m_enabled_checkbox->setChecked(Config::Get(Config::MAIN_EMULATE_SKYLANDER_PORTAL));
   m_emulating = Config::Get(Config::MAIN_EMULATE_SKYLANDER_PORTAL);
+  m_show_button_ingame_checkbox = new QCheckBox(tr("Show Portal Button In-Game"), this);
 #ifdef Q_OS_DARWIN
   m_show_button_ingame_checkbox->setEnabled(false);
 #endif
   connect(m_enabled_checkbox, &QCheckBox::toggled, [&](bool checked) { EmulatePortal(checked); });
+  connect(m_show_button_ingame_checkbox, &QCheckBox::toggled,
+          [&](bool checked) { open_portal_btn->SetEnabled(checked); });
   checkbox_layout->addWidget(m_enabled_checkbox);
+  checkbox_layout->addWidget(m_show_button_ingame_checkbox);
   checkbox_group->setLayout(checkbox_layout);
   slot_layout->addWidget(checkbox_group);
 
